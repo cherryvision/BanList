@@ -846,18 +846,19 @@ public class BanList extends JavaPlugin implements Listener {
 	}
 	
 	private String getAddress(String nameOrIP, CommandSender sender){
+		
+		String address = null;
+		
 		//The sender specified an IP address
 		if(nameOrIP.contains(".")){
 			
 			boolean invalidIp = false;
 			
-			String[] addressparts = nameOrIP.split(".");
+			String[] addressparts = nameOrIP.split("\\.");
 			
 			//Not enough parts
-			if(addressparts.length != 4){
+			if(addressparts.length != 4)
 				invalidIp = true;
-				log.info("Length");
-			}
 			else{
 				try{
 					
@@ -872,13 +873,14 @@ public class BanList extends JavaPlugin implements Listener {
 				//One of the parts of the IP wasn't a number
 				}catch(NumberFormatException e){
 					invalidIp = true;
-					log.info("NFE");
 				}
 			}
 			
 			//Exit because the IP address they wanted to use wasn't valid.
 			if(invalidIp)
 				sender.sendMessage(this.logPrefix + "The ip you specified is not valid. \"" + nameOrIP + "\"");
+			else
+				address = nameOrIP;
 
 		}else{
 			
@@ -890,13 +892,13 @@ public class BanList extends JavaPlugin implements Listener {
 			
 			//If the player is offline, get their last used IP
 			else
-				nameOrIP = sqlc.getLastIP(player);
+				address = sqlc.getLastIP(player);
 			
-			if(nameOrIP == null)
+			if(address == null)
 				sender.sendMessage(this.logPrefix + "The ip address for the player you specified could not be determined.");
 				
 		}
 		
-		return nameOrIP;
+		return address;
 	}
 }
