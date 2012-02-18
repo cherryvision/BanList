@@ -1,0 +1,92 @@
+name: BanList
+main: es.jinki.BanList.BanList
+version: 0.01
+
+commands:
+   ban:
+      description: Bans a specified player
+      usage: /<command> player [reason]
+      permission: banlist.ban
+      permission-message: You don't have <permission>
+      
+   unban:
+      description: Unbans a specified player
+      usage: /<command> player [reason]
+      permission: banlist.ban
+      permission-message: You don't have <permission>
+      
+   probate:
+      description: Probates a specified player
+      usage: /<command> player [+][#y#m#d#H#M] [reason]
+      permission: banlist.probate
+      permission-message: You don't have <permission>
+      
+   kick:
+      description: Kicks a specified player
+      usage: /<command> player [reason]
+      permission: banlist.kick
+      permission-message: You don't have <permission>
+      
+   comment:
+      description: Puts a note in the specified player's file
+      usage: /<command> player note
+      permission: banlist.note
+      permission-message: You don't have <permission>
+      
+   rapsheet:
+      description: Displays the rap sheet of the specified player
+      usage: /<command> player
+      permission: banlist.rapsheet
+      permission-message: You don't have <permission>
+      
+   banip:
+      description: Bans a player by IP
+      usage: /<command> player/address
+      permission: banlist.banip
+      permission-message: You don't have <permission>
+      
+   pardonip:
+      description: Pardons an IP
+      usage: /<command> player/address
+      permission: banlist.banip
+      permission-message: You don't have <permission>
+
+permissions:
+    banlist.*:
+        description: Gives access to all banlist commands
+        children:
+            banlist.ban: true
+            banlist.banip: true
+            banlist.probate: true
+            banlist.kick: true
+            banlist.rapsheet: true
+            banlist.note: true
+            banlist.fullrapsheet: true
+            
+    banlist.ban:
+        description: Gives access to the ban and unban command
+        default: op
+        
+    banlist.probate:
+        description: Gives access to the ban and probate command
+        default: op
+        
+    banlist.kick:
+        description: Gives access to the ban and kick command
+        default: op
+        
+    banlist.rapsheet:
+        description: Gives access to the ban and rapsheet command
+        default: true
+        
+    banlist.fullrapsheet:
+        description: Gives access to the rapsheet command with all information
+        default: op
+        
+    banlist.note:
+        description: Allows adding a comment to a person's rapsheet
+        default: op
+        
+    banlist.banip:
+        description: Allows banning and unbanning of people by IP
+        default: op

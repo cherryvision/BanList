@@ -748,4 +748,151 @@ public class SQLConnect {
 		
 		return endTime;
 	}
+	
+	/**
+	 * Adds an IP to the ban list
+	 * @param address
+	 */
+	public void banIP(String address){
+		String sql = "INSERT INTO " + dbPrefix + "IPBans (ipAddress) VALUES (?)";
+				
+		PreparedStatement st = null;
+		DatabaseHandler db = null;
+		
+		//Get the preparestatement
+		if(useMySQL){
+			db = new MySQL(log, logPrefix, dbHost, dbPort, dbName, dbUser, dbPass);
+			st = ((MySQL)db).prepare(sql);
+		}else{
+			db = new SQLite(log, logPrefix, "banlist", dataFolder.getPath());
+			st = ((SQLite)db).prepare(sql);
+		}
+		try {
+			st.setString(1, address);
+			
+			st.executeUpdate();
+			st.close();
+			if(db instanceof MySQL)
+				((MySQL)db).close();
+			else
+				((SQLite)db).close();
+		} catch (SQLException e) {
+			if(!e.getMessage().toLowerCase().contains("is not unique"))
+				log.warning(logPrefix + e.getMessage());
+		}
+	}
+	
+	/**
+	 * Removes an IP from the ban list
+	 * @param address
+	 */
+	public void pardonIP(String address){
+		String sql = "DELETE FROM " + dbPrefix + "IPBans WHERE ipAddress=?";
+				
+		PreparedStatement st = null;
+		DatabaseHandler db = null;
+		
+		//Get the preparestatement
+		if(useMySQL){
+			db = new MySQL(log, logPrefix, dbHost, dbPort, dbName, dbUser, dbPass);
+			st = ((MySQL)db).prepare(sql);
+		}else{
+			db = new SQLite(log, logPrefix, "banlist", dataFolder.getPath());
+			st = ((SQLite)db).prepare(sql);
+		}
+		try {
+			st.setString(1, address);
+			
+			st.executeUpdate();
+			st.close();
+			if(db instanceof MySQL)
+				((MySQL)db).close();
+			else
+				((SQLite)db).close();
+		} catch (SQLException e) {
+			log.warning(logPrefix + e.getMessage());
+		}
+	}
+	
+	/**
+	 * Returns if an IP is banned or not
+	 * @param address The IP to check
+	 * @return If the IP is banned
+	 */
+	public boolean isAddressBanned(String address){
+		String sql = "SELECT ipAddress FROM " + dbPrefix + "IPBans WHERE ipAddress=?";
+		
+		boolean isBanned = false;
+				
+		PreparedStatement st = null;
+		DatabaseHandler db = null;
+		
+		//Get the preparestatement
+		if(useMySQL){
+			db = new MySQL(log, logPrefix, dbHost, dbPort, dbName, dbUser, dbPass);
+			st = ((MySQL)db).prepare(sql);
+		}else{
+			db = new SQLite(log, logPrefix, "banlist", dataFolder.getPath());
+			st = ((SQLite)db).prepare(sql);
+		}
+		try {
+			if(st != null){
+				st.setString(1, address);
+				ResultSet rs = st.executeQuery();
+				
+				if(rs.next())
+					isBanned = rs.getBoolean(1);
+				st.close();
+			}
+			if(db instanceof MySQL)
+				((MySQL)db).close();
+			else
+				((SQLite)db).close();
+		} catch (SQLException e) {
+			log.warning(logPrefix + e.getMessage());
+		}
+		
+		return isBanned;
+	}
+	
+	/**
+	 * Returns the IP of a player if they've ever been on
+	 * @param address The IP to check
+	 * @return If the IP is banned
+	 */
+	public String getLastIP(OfflinePlayer player){
+		String sql = "SELECT playerIP FROM " + dbPrefix + "ConnectionLog WHERE playerName=? ORDER BY joinTime DESC";
+		
+		String address = null;
+				
+		PreparedStatement st = null;
+		DatabaseHandler db = null;
+		
+		//Get the preparestatement
+		if(useMySQL){
+			db = new MySQL(log, logPrefix, dbHost, dbPort, dbName, dbUser, dbPass);
+			st = ((MySQL)db).prepare(sql);
+		}else{
+			db = new SQLite(log, logPrefix, "banlist", dataFolder.getPath());
+			st = ((SQLite)db).prepare(sql);
+		}
+		try {
+			if(st != null){
+				st.setString(1, player.getName());
+				ResultSet rs = st.executeQuery();
+				
+				if(rs.next())
+					address = rs.getString(1);
+				st.close();
+			}
+			if(db instanceof MySQL)
+				((MySQL)db).close();
+			else
+				((SQLite)db).close();
+		} catch (SQLException e) {
+			log.warning(logPrefix + e.getMessage());
+		}
+		
+		return address;
+	}
 }

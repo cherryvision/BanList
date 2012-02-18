@@ -1,0 +1,18 @@
+2/18/2012 6:17 AM:
+	Added IP banning and pardoning: 
+		- Added banIP to SQLConnect
+			- Insert the IP into the banned IP table
+		- Added pardonIP to SQLConnect
+			- Removes the IP from the banned IP table
+		- Added isAddressBanned to SQLConnect
+			- Looks for the specified IP in the banned IP table and returns true or false
+		- Added getLastIP to SQLConnect
+			- Gets a player's last known IP address or null if they've never been on
+		- Added getAddress to BanList
+			- Function to facilitate banning IPs by checking if they specified a player or address,
+			verifying the address is valid, or looking up the player's last known IP
+			
+	Added getPlayer function to BanList
+		- Moved pre-existing code into the function
+		- Added a check for "." to return null if it's an IP so as not to make a player with
+		an address for a name

@@ -1,0 +1,8 @@
+MySQL.Enabled: false
+
+MySQL.Server.Address: localhost
+MySQL.Server.Port: 3306
+
+MySQL.Database.Name: minecraft
+MySQL.Database.User.Name: minecraft
+MySQL.Database.User.Password: password

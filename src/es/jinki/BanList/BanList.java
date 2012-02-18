@@ -1,8 +1,4 @@
 package es.jinki.BanList;
-//TODO: Setting IP Bans
-//TODO: Removing IP Bans
-//TODO: Looking up Admin Action Pages by IP
-//TODO: Get all players by IP
 
 import java.io.File;
 import java.sql.Timestamp;
@@ -29,7 +25,7 @@ public class BanList extends JavaPlugin implements Listener {
 
 	//Get the logger for displaying output
 	private Logger log = Logger.getLogger("Minecraft");
-	protected final static String logPrefix = "[BanList] "; // Prefix to go in front of all this.log entries
+	protected final String logPrefix = "[BanList] "; // Prefix to go in front of all this.log entries
 	
 	//Config file variables
 	private File configFile;
@@ -87,7 +83,7 @@ public class BanList extends JavaPlugin implements Listener {
 		
 		sqlc.setupTables();
 		
-		this.log.info(BanList.logPrefix + "has been successfully enabled.");
+		this.log.info(this.logPrefix + "has been successfully enabled.");
 		
 		//Register the player listener
 		getServer().getPluginManager().registerEvents(this, this);
@@ -98,7 +94,7 @@ public class BanList extends JavaPlugin implements Listener {
 	 * Say the plugin has been disabled even though we don't really do anything.
 	 */
 	public void onDisable(){ 
-		this.log.info(BanList.logPrefix + "has been successfully disabled.");
+		this.log.info(this.logPrefix + "has been successfully disabled.");
 	}
 	
 	/**
@@ -110,26 +106,32 @@ public class BanList extends JavaPlugin implements Listener {
 		String kickMessage = new String();
 		Timestamp currentTime = new Timestamp(Calendar.getInstance().getTimeInMillis());
 		Timestamp endTime = sqlc.getProbate(event.getName());
+
+		event.setResult(Result.KICK_BANNED);
+		
+		
+		if(sqlc.isAddressBanned(event.getAddress().getHostAddress())){
+			kickMessage = "Your IP address is banned.";
+		}
 		
 		//if they're banned, prevent them from connecting
-		if(sqlc.isBanned(event.getName())){
+		else if(sqlc.isBanned(event.getName())){
 			AdminAction ban = sqlc.getMostRecent(event.getName(), BanList.BAN);
 			kickMessage = "You are currently banned";
 			
 			if(ban != null && !ban.actionReason.isEmpty())
 				kickMessage += " because \"" + ban.actionReason + "\"";
-
-			event.setResult(Result.KICK_FULL);
+		}
+		
 		//If they're not banned, check for probation
-		}else if(endTime != null && currentTime.before(endTime)){
+		else if(endTime != null && currentTime.before(endTime)){
 			AdminAction pb = sqlc.getMostRecent(event.getName(), BanList.PROBATE);
 			kickMessage = "You are currently probated for another " + getTimeRemaining(endTime);
 			
 			if(pb != null && !pb.actionReason.isEmpty())
 				kickMessage += " because \"" + pb.actionReason + "\"";
-			
-			event.setResult(Result.KICK_FULL);
-		}
+		} else
+			event.setResult(Result.ALLOWED);
 		
 		event.setKickMessage(kickMessage);
 	}
@@ -163,18 +165,9 @@ public class BanList extends JavaPlugin implements Listener {
 		String[] reasonArray = null;
 		OfflinePlayer player = null;
 
-		//Get the player name
-		try{
-			if(args.length > 0)
-				Integer.parseInt(args[0]);
-		} catch(NumberFormatException e) {
-			if(args.length > 0){
-				String playerName = args[0].toLowerCase();
-				player = Bukkit.getServer().getPlayer(playerName);
-				if(player == null)
-					player = sqlc.getOfflinePlayer(playerName);
-			}
-		}
+		//Get the player
+		if(args.length > 0)
+			player = getPlayer(args[0]);
 		
 		
 		if(cmd.getName().equalsIgnoreCase("ban")){
@@ -185,8 +178,54 @@ public class BanList extends JavaPlugin implements Listener {
 		    sqlc.setBanned(player, false);
 		} else if(cmd.getName().equalsIgnoreCase("kick")){
 			type = BanList.KICK;
-		} else if(cmd.getName().equalsIgnoreCase("ipban")){
+		} else if(cmd.getName().equalsIgnoreCase("banip")){
+			String address = null;
 			type = BanList.IPBAN;
+			
+			if(args.length > 0){
+				address = getAddress(args[0], sender);
+			}else
+				return false;
+			
+			//IP could be found
+			if(address != null){
+				if(sqlc.isAddressBanned(address)){
+					sender.sendMessage(this.logPrefix + address + " is already banned.");
+					return true;
+				}
+				sqlc.banIP(address);
+				sender.sendMessage(this.logPrefix + "You have banned " + address);
+			}
+			
+			//IP could not be found
+			else
+				return true;
+			
+			//Exit without error, doesn't need to be logged.
+			if(player == null)
+				return true;
+				
+		} else if(cmd.getName().equalsIgnoreCase("pardonip")){
+			String address = null;
+			
+			if(args.length > 0){
+				address = getAddress(args[0], sender);
+			}else
+				return false;
+			
+			//IP could be found
+			if(address != null){
+				if(!sqlc.isAddressBanned(address)){
+					sender.sendMessage(this.logPrefix + address + " is not banned.");
+					return true;
+				}
+				sqlc.pardonIP(address);
+				sender.sendMessage(this.logPrefix + "You have unbanned " + address);
+			}
+			
+			return true;
+			
+
 		} else if(cmd.getName().equalsIgnoreCase("comment")){
 			type = BanList.COMMENT;
 			
@@ -481,7 +520,7 @@ public class BanList extends JavaPlugin implements Listener {
 			
 			//End time is before current time
 			if(endDate.before(new Timestamp(Calendar.getInstance().getTimeInMillis()))){
-				sender.sendMessage(BanList.logPrefix + "The probation time specified has already expired.");
+				sender.sendMessage(this.logPrefix + "The probation time specified has already expired.");
 				return true;
 			}
 			
@@ -498,7 +537,7 @@ public class BanList extends JavaPlugin implements Listener {
 				if(!dateString.isEmpty())
 					dateString = dateString.substring(0, dateString.length() - 1);
 					
-				sender.sendMessage(BanList.logPrefix + "Date could not be read: " + dateString);
+				sender.sendMessage(this.logPrefix + "Date could not be read: " + dateString);
 				return true;
 			}
 			sqlc.setProbate(player, endDate); //Set the probation
@@ -590,7 +629,7 @@ public class BanList extends JavaPlugin implements Listener {
 			}
 
 			//Display in console
-			String logString = BanList.logPrefix + sender.getName() + " has " + getTypePast(type) + " " + player.getName();
+			String logString = this.logPrefix + sender.getName() + " has " + getTypePast(type) + " " + player.getName();
 			String kickString = "You have been " + getTypePast(type);
 			if(type == BanList.PROBATE){
 				logString += " for " + getTimeRemaining(endDate);
@@ -603,9 +642,9 @@ public class BanList extends JavaPlugin implements Listener {
 			this.log.info(logString); //Log the action
 			
 			//Kick the player if they're online
-			if(player != null && type != BanList.COMMENT)
-				if(player instanceof Player)
-					((Player) player).kickPlayer(kickString); //Kick the player if online
+			if(player != null && type != BanList.COMMENT && player instanceof Player)
+				((Player) player).kickPlayer(kickString); //Kick the player if online
+			
     		sqlc.sendAction(player, type, sender.getName(), reason); //Send the update
 			return true;
 		}
@@ -786,5 +825,78 @@ public class BanList extends JavaPlugin implements Listener {
 		}
 		
 		return day;
+	}
+	
+	private OfflinePlayer getPlayer(String name){
+		try{
+			Integer.parseInt(name);
+			return null;
+		} catch(NumberFormatException e) {
+			
+			if(name.contains("."))
+				return null;
+			
+			String playerName = name.toLowerCase();
+			OfflinePlayer player = Bukkit.getServer().getPlayer(playerName);
+			if(player == null)
+				player = sqlc.getOfflinePlayer(playerName);
+			
+			return player;
+		}
+	}
+	
+	private String getAddress(String nameOrIP, CommandSender sender){
+		//The sender specified an IP address
+		if(nameOrIP.contains(".")){
+			
+			boolean invalidIp = false;
+			
+			String[] addressparts = nameOrIP.split(".");
+			
+			//Not enough parts
+			if(addressparts.length != 4){
+				invalidIp = true;
+				log.info("Length");
+			}
+			else{
+				try{
+					
+					//Make sure each part of the address is a number
+					for(String part: addressparts){
+						log.info(part);
+						//Make sure the numbers are valid
+						if(Integer.parseInt(part) > 254 || Integer.parseInt(part) < 0)
+							invalidIp = true;
+					}
+				
+				//One of the parts of the IP wasn't a number
+				}catch(NumberFormatException e){
+					invalidIp = true;
+					log.info("NFE");
+				}
+			}
+			
+			//Exit because the IP address they wanted to use wasn't valid.
+			if(invalidIp)
+				sender.sendMessage(this.logPrefix + "The ip you specified is not valid. \"" + nameOrIP + "\"");
+
+		}else{
+			
+			OfflinePlayer player = getPlayer(nameOrIP);
+			
+			//If the player is online, get their current IP
+			if(player instanceof Player)
+				nameOrIP = ((Player) player).getAddress().getHostName();
+			
+			//If the player is offline, get their last used IP
+			else
+				nameOrIP = sqlc.getLastIP(player);
+			
+			if(nameOrIP == null)
+				sender.sendMessage(this.logPrefix + "The ip address for the player you specified could not be determined.");
+				
+		}
+		
+		return nameOrIP;
 	}
 }
