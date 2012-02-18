@@ -1,0 +1,11 @@
+Soon:
+- Looking up Admin Action Pages by IP
+- Get player list by IP
+- Auto ban people attempting to bypass bans
+	- Link auto bans to initial bans (Possibly to other player?) so they can be unbanned when
+	the probation ends or when either is unbanned
+- Add alternate account field to player table (ties into banning for ban evasion)
+
+Later:
+- Spout interface
+- PHP interface
